@@ -73,6 +73,8 @@ There are many definitions:
 
 ![Anthropic](./images/what-is-agent-anthropic.png)
 
+Very good article [https://www.anthropic.com/research/building-effective-agents](https://www.anthropic.com/research/building-effective-agents)
+
 ## HuggingFace
 
 ![HF](./images/what-is-agent-huggingface.png)
