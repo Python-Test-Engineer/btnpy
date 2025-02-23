@@ -1,6 +1,6 @@
 {
-   "editor.tokenColorustomizations": {
-      "comments": "#ff8c00"
+   "editor.tokenColorCustomizations": {
+      "comments": "#0fa81c"
    },
    "window.zoomLevel": 1,
    "editor.fontSize": 18,
@@ -144,7 +144,7 @@
    "python.analysis.typeCheckingMode": "strict",
    "python.formatting.provider": "none",
    "editor.autoIndent": "keep",
-   "workbench.colorTheme": "Monokai Crete",
+   "workbench.colorTheme": "Default High Contrast",
    "terminal.integrated.defaultProfile.windows": "PowerShell",
    "animations.Install-Method": "Apc Customize UI++",
    "apc.imports": [
