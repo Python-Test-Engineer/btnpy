@@ -1,6 +1,6 @@
 {
    "editor.tokenColorCustomizations": {
-      "comments": "#0fa81c"
+      "comments": "#FFA500"
    },
    "window.zoomLevel": 1,
    "editor.fontSize": 18,
