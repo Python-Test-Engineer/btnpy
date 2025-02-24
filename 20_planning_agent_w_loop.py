@@ -160,10 +160,3 @@ loop(query="What is cost of a bike including VAT?")
 # and
 # 'ANSWER|The price of the bike including VAT is 240'
 # as an instruction to the agent for the output format wht it has the answer.
-
-# IF WE WANT TO RUN IT AGAIN...
-# loop(query="What is cost of a tv including VAT?")
-# loop(query="What is cost of a laptop including VAT?")
-# print("\n=========== SUMMARY ANSWERS ===========")
-# for answer in answers:
-#     print(answer)
