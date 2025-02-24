@@ -10,11 +10,21 @@ or
 
 [https://github.com/Python-Test-Engineer/django-jpn](https://github.com/Python-Test-Engineer/django-jpn)
 
-I will show you the repo and this is a mini-workshop effectively that can also be usedfor future reference.
+I will show you the repo and this is a mini-workshop effectively that can also be used for future reference.
 
 And I will be using NOTES.md/NOTES.html for this talk so you can follow along with me. There will repetition of some information between my NOTES and the NOTEBOOKS to clarify matters.
 
 The talk will be mostly code walkthroughs with notebooks that have a lot of comments for completeness and clarification.
+
+## Caveat
+
+This talk takes place in Feb 2025 and models and the landscape change very quickly. 
+
+The aim of this talk is to **demystify** and **simplify** AI Agents and AI Programming because it can seem like it is another different world of dev or that it is either fully AI or not at all. We can't have 'a bit of AI' in our app.
+
+There may be edge cases and I have avoided these to avoid making the talk more complex than it needs to be for its aims.
+
+Let's look at where Agentic Apps differ from regular apps and perhaps we may see that AI Agents are 'just' Python with LLM calls.   
 
 ## Who am I?
 
