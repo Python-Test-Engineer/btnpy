@@ -81,7 +81,7 @@ e.g. get_product_price('bike')
 This uses the get_product_price with a product = 'bike', finds the price of the bike and then returns a JSON FORMAT output as follows:
 {"result": 200, "fn": "get_product_price", "next": "PAUSE"}
 
-Here is an example session:
+ # Here is an example session:
 
 User Question: What is total cost of a bike including VAT?
 
@@ -102,7 +102,7 @@ ANSWER|The price of the bike including VAT is 240
 """
 
 # We now loop over the query until an answer is found or the'max_iterations' is reached
-answers = []
+# answers = []
 
 
 def loop(max_iterations=10, query: str = ""):
@@ -149,8 +149,9 @@ def loop(max_iterations=10, query: str = ""):
             print("======================================")
             console.print(f"[cyan bold]Answer found:\n\t{result}\n[/]")
             print("======================================")
-            answers.append(result)
+            # answers.append(result)
             break  # we have an answer so break out of loop
+    return result
 
 
 # Let's run it...
