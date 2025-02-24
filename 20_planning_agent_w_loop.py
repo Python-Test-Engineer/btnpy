@@ -101,9 +101,6 @@ ANSWER|The price of the bike including VAT is 240
 
 """
 
-# We now loop over the query until an answer is found or the'max_iterations' is reached
-# answers = []
-
 
 def loop(max_iterations=10, query: str = ""):
     agent = Agent(client=client, system=system_prompt)
@@ -149,7 +146,6 @@ def loop(max_iterations=10, query: str = ""):
             print("======================================")
             console.print(f"[cyan bold]Answer found:\n\t{result}\n[/]")
             print("======================================")
-            # answers.append(result)
             break  # we have an answer so break out of loop
     return result
 
