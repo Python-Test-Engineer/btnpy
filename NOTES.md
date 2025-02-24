@@ -98,23 +98,19 @@ What if AI Agents were 'just' Python code with a REST API call, admittedly a ver
 
 *AI (Agents) as API*...
 
-Then, we would use day to day Python design patterns to handle the responses we get back from the AI Agent and move on to the next step. Business as usual for Python/Django developers.
+Then, we would use day to day Python design patterns to handle the responses we get back from the AI Agent and move on to the next step. Business as usual for Python developers.
 
 This is the main focus of the talk - **demystify and simplify** - and this will enable you to create AI Agents and also construct workflows using AI Agents.
 
 With that in mind, we don't need to fully grasp the code this time around. 
 
-It is more about seeing the high level view and once can dig deeper into the code offline.
+It is more about seeing the high level view and one can dig deeper into the code offline.
+
+The repo is built as if a mini workshop with notebooks and py files heavily commented.
 
 *Look at the patterns and structure rather than the code details* - it is what helped me get to grips with this new paradigm.
 
-We will use Notebooks to explore AI Agents and then we will see an implementation of an AI Agent in Django, using the same code. 
-
-It is the same code that produces the same output for us to use in our Django App. *There is not extra 'wiring' involved to use AI Agents in Django*.
-
-There is a demo and sample code to illustrate the FAQ use case which we will see later. 
-
-Like getting data back from the database, we get data back from an LLM request to use as we wish.
+We will use Notebooks to explore AI Agents and then we will see an implementation of an AI Agent in a py file that combines many of the concepts we will discuss.
 
 ## 180 degrees
 
@@ -133,7 +129,9 @@ For the purpose of this talk I will use the term `function` in the mathematical 
 
 ### input -> function(input) -> output -> function(output) -> output2
 
-![input-output](./INPUT_OUTPUT.png)
+The function might be a variation on the Agent we are using or it may be another Agent that accepts the opuput as input. No different to Python Classes/Functions in an App.
+
+<img src="./INPUT_OUTPUT.png" width=1000px>
 
 The `function` might be a Python function or a class. 
 

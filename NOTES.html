@@ -1,243 +1,150 @@
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="generator" content="pandoc" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>DjangoJP Congress</title>
-  <style>
-    html {
-      color: #1a1a1a;
-      background-color: #fdfdfd;
-    }
-
-    body {
-      font-family: Raleway, sans-serif;
-      font-size: 20px;
-      margin: 0 auto;
-      max-width: 36em;
-      padding-left: 50px;
-      padding-right: 50px;
-      padding-top: 50px;
-      padding-bottom: 50px;
-      hyphens: auto;
-      overflow-wrap: break-word;
-      text-rendering: optimizeLegibility;
-      font-kerning: normal;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        font-size: 0.9em;
-        padding: 12px;
-      }
-
-      h1 {
-        font-size: 1.8em;
-      }
-    }
-
-    @media print {
-      html {
-        background-color: white;
-      }
-
-      body {
-        background-color: transparent;
-        color: black;
-        font-size: 12pt;
-      }
-
-      p,
-      h2,
-      h3 {
-        orphans: 3;
-        widows: 3;
-      }
-
-      h2,
-      h3,
-      h4 {
-        page-break-after: avoid;
-      }
-    }
-
-    p {
-      margin: 1em 0;
-    }
-
-    a {
-      color: #1a1a1a;
-    }
-
-    a:visited {
-      color: #1a1a1a;
-    }
-
-    img {
-      max-width: 100%;
-    }
-
-    h1,
-    h2,
-    h3,
-    h4,
-    h5,
-    h6 {
-      margin-top: 1.4em;
-    }
-
-    h5,
-    h6 {
-      font-size: 1em;
-      font-style: italic;
-    }
-
-    h6 {
-      font-weight: normal;
-    }
-
-    ol,
-    ul {
-      padding-left: 1.7em;
-      margin-top: 1em;
-    }
-
-    li>ol,
-    li>ul {
-      margin-top: 0;
-    }
-
-    blockquote {
-      margin: 1em 0 1em 1.7em;
-      padding-left: 1em;
-      border-left: 2px solid #e6e6e6;
-      color: #606060;
-    }
-
-    code {
-      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
-      font-size: 85%;
-      margin: 0;
-      hyphens: manual;
-    }
-
-    pre {
-      margin: 1em 0;
-      overflow: auto;
-    }
-
-    pre code {
-      padding: 0;
-      overflow: visible;
-      overflow-wrap: normal;
-    }
-
-    .sourceCode {
-      background-color: transparent;
-      overflow: visible;
-    }
-
-    hr {
-      background-color: #1a1a1a;
-      border: none;
-      height: 1px;
-      margin: 1em 0;
-    }
-
-    table {
-      margin: 1em 0;
-      border-collapse: collapse;
-      width: 100%;
-      overflow-x: auto;
-      display: block;
-      font-variant-numeric: lining-nums tabular-nums;
-    }
-
-    table caption {
-      margin-bottom: 0.75em;
-    }
-
-    tbody {
-      margin-top: 0.5em;
-      border-top: 1px solid #1a1a1a;
-      border-bottom: 1px solid #1a1a1a;
-    }
-
-    th {
-      border-top: 1px solid #1a1a1a;
-      padding: 0.25em 0.5em 0.25em 0.5em;
-    }
-
-    td {
-      padding: 0.125em 0.5em 0.25em 0.5em;
-    }
-
-    header {
-      margin-bottom: 4em;
-      text-align: center;
-    }
-
-    #TOC li {
-      list-style: none;
-    }
-
-    #TOC ul {
-      padding-left: 1.3em;
-    }
-
-    #TOC>ul {
-      padding-left: 0;
-    }
-
-    #TOC a:not(:hover) {
-      text-decoration: none;
-    }
-
-    code {
-      white-space: pre-wrap;
-    }
-
-    span.smallcaps {
-      font-variant: small-caps;
-    }
-
-    div.columns {
-      display: flex;
-      gap: min(4vw, 1.5em);
-    }
-
-    div.column {
-      flex: auto;
-      overflow-x: auto;
-    }
-
-    div.hanging-indent {
-      margin-left: 1.5em;
-      text-indent: -1.5em;
-    }
-
-    /* The extra [class] is a hack that increases specificity enough to
-       override a similar rule in reveal.js */
-    ul.task-list[class] {
-      list-style: none;
-    }
-
-    ul.task-list li input[type="checkbox"] {
-      font-size: inherit;
-      width: 0.8em;
-      margin: 0 0.8em 0.2em -1.6em;
-      vertical-align: middle;
-    }
-
-    .display.math {
-      display: block;
-      text-align: center;
-      margin: 0.5rem auto;
-    }
-  </style>
-  <!--[if lt IE 9]>
+.vscode .vscode/settings.json images venv .env .env.sample .gitignore ~$ai-agents.pptx 01_openai_api_with_requests.ipynb
+02_api.ipynb 03_faq.ipynb 04_router.ipynb 05_tool_calling.ipynb 06_extraction_teachability.ipynb
+15_reflection_pattern.ipynb 20_planning_agent_no_loop.ipynb 20_planning_agent_w_loop.py ai-agents.pptx chatgpt_css.html
+craig-west-intro-card.png ESSENCE.png INPUT_OUTPUT.png LINKS.md NOTES_BTN_PY.md NOTES_STYLE.md NOTES.html NOTES.md
+README.md requirements.txt sample_prompt.md WHEN.png zen.md
+@media (max-width: 600px) {
+body {
+font-size: 0.9em;
+padding: 12px;
+}
+h1 {
+font-size: 1.8em;
+}
+}
+@media print {
+html {
+background-color: white;
+}
+body {
+background-color: transparent;
+color: black;
+font-size: 12pt;
+}
+p, h2, h3 {
+orphans: 3;
+widows: 3;
+}
+h2, h3, h4 {
+page-break-after: avoid;
+}
+}
+p {
+margin: 1em 0;
+}
+a {
+color: #1a1a1a;
+}
+a:visited {
+color: #1a1a1a;
+}
+img {
+max-width: 100%;
+}
+h1, h2, h3, h4, h5, h6 {
+margin-top: 1.4em;
+}
+h5, h6 {
+font-size: 1em;
+font-style: italic;
+}
+h6 {
+font-weight: normal;
+}
+ol, ul {
+padding-left: 1.7em;
+margin-top: 1em;
+}
+li > ol, li > ul {
+margin-top: 0;
+}
+blockquote {
+margin: 1em 0 1em 1.7em;
+padding-left: 1em;
+border-left: 2px solid #e6e6e6;
+color: #606060;
+}
+code {
+font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+font-size: 85%;
+margin: 0;
+hyphens: manual;
+}
+pre {
+margin: 1em 0;
+overflow: auto;
+}
+pre code {
+padding: 0;
+overflow: visible;
+overflow-wrap: normal;
+}
+.sourceCode {
+background-color: transparent;
+overflow: visible;
+}
+hr {
+background-color: #1a1a1a;
+border: none;
+height: 1px;
+margin: 1em 0;
+}
+table {
+margin: 1em 0;
+border-collapse: collapse;
+width: 100%;
+overflow-x: auto;
+display: block;
+font-variant-numeric: lining-nums tabular-nums;
+}
+table caption {
+margin-bottom: 0.75em;
+}
+tbody {
+margin-top: 0.5em;
+border-top: 1px solid #1a1a1a;
+border-bottom: 1px solid #1a1a1a;
+}
+th {
+border-top: 1px solid #1a1a1a;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+td {
+padding: 0.125em 0.5em 0.25em 0.5em;
+}
+header {
+margin-bottom: 4em;
+text-align: center;
+}
+#TOC li {
+list-style: none;
+}
+#TOC ul {
+padding-left: 1.3em;
+}
+#TOC > ul {
+padding-left: 0;
+}
+#TOC a:not(:hover) {
+text-decoration: none;
+}
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+/* The extra [class] is a hack that increases specificity enough to
+override a similar rule in reveal.js */
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+<!--[if lt IE 9]>
     <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
   <![endif]-->
 </head>
@@ -299,6 +206,9 @@
   <p>There are many definitions:</p>
   <h2 id="anthropic">Anthropic</h2>
   <p><img src="./images/what-is-agent-anthropic.png" alt="Anthropic" /></p>
+  <p>Very good article <a
+      href="https://www.anthropic.com/research/building-effective-agents">https://www.anthropic.com/research/building-effective-agents</a>
+  </p>
   <h2 id="huggingface">HuggingFace</h2>
   <p><img src="./images/what-is-agent-huggingface.png" alt="HF" /></p>
   <h2 id="pydantic">Pydantic</h2>
@@ -321,26 +231,22 @@
   <p><em>AI (Agents) as API</em>…</p>
   <p>Then, we would use day to day Python design patterns to handle the
     responses we get back from the AI Agent and move on to the next step.
-    Business as usual for Python/Django developers.</p>
+    Business as usual for Python developers.</p>
   <p>This is the main focus of the talk - <strong>demystify and
       simplify</strong> - and this will enable you to create AI Agents and
     also construct workflows using AI Agents.</p>
   <p>With that in mind, we don’t need to fully grasp the code this time
     around.</p>
-  <p>It is more about seeing the high level view and once can dig deeper
+  <p>It is more about seeing the high level view and one can dig deeper
     into the code offline.</p>
+  <p>The repo is built as if a mini workshop with notebooks and py files
+    heavily commented.</p>
   <p><em>Look at the patterns and structure rather than the code
       details</em> - it is what helped me get to grips with this new
     paradigm.</p>
   <p>We will use Notebooks to explore AI Agents and then we will see an
-    implementation of an AI Agent in Django, using the same code.</p>
-  <p>It is the same code that produces the same output for us to use in
-    our Django App. <em>There is not extra ‘wiring’ involved to use AI
-      Agents in Django</em>.</p>
-  <p>There is a demo and sample code to illustrate the FAQ use case which
-    we will see later.</p>
-  <p>Like getting data back from the database, we get data back from an
-    LLM request to use as we wish.</p>
+    implementation of an AI Agent in a py file that combines many of the
+    concepts we will discuss.</p>
   <h2 id="180-degrees">180 degrees</h2>
   <p><img src="./images/mouse-up.jpg" alt="mouse up" /> <img src="./images/mouse-down.jpg" alt="mouse down" /></p>
   <p>I like to use the metaphor of the upside down computer mouse. When we
@@ -361,6 +267,9 @@
   <h3 id="input---functioninput---output---functionoutput---output2">input
     -&gt; function(input) -&gt; output -&gt; function(output) -&gt;
     output2</h3>
+  <p>The function might be a variation on the Agent we are using or it may
+    be another Agent that accepts the opuput as input. No different to
+    Python Classes/Functions in an App.</p>
   <p><img src="./INPUT_OUTPUT.png" alt="input-output" /></p>
   <p>The <code>function</code> might be a Python function or a class.</p>
   <p>Before we go into some code examples, we will refresh ourselves that
