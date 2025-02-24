@@ -1,8 +1,0 @@
-GitHub Repo:
-
-https://github.com/Python-Test-Engineer/conf42-ai-agents
-
-Other links:
-
-https://pytest-cookbook.com/
-https://ai-powered-knowledge-systems.netlify.app/
