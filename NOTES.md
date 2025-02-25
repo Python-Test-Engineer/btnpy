@@ -259,19 +259,6 @@ This is RAG or Retrieval Augmented Generation, where we 'augment' the query with
 
 We can see that we can create a powerful AI Agent that can answer questions based on the data in the FAQ list.
 
-## Django Demo
-
-Let's look at how this is done in Django.
-
-To keep the code similar tot he notebook, we will look at the `chatbot` app 
-and the `views.py` file.
-
-There is a refactored version using HTMX in the `chatobt_app` app.
-
-I have already logged in so we can see the `chatbot` app in action as well as the `chabot_app` version.
-
-The key takeway is that the Django implementation is very similar to the notebook implementation with no special wiring involved.
-
 # ROUTER
 
 We can further extend this to be a type of ROUTER or *if/else* statement to provide a sense of autonomy to the app - it will direct the flow of the app. We can have 'Human in the Loop' at any stage so that we restrict the flow to approved paths.
