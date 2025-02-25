@@ -62,7 +62,7 @@ and I also enjoy working in community kitchens and partner dancing.
 
 Just got a Red Fox Labrador Pup Leo, (much earlier than planned):
 
-<img src="./images/leo-main.png" width="300px" >
+<img src="./images/leo-main.png" width="250px" >
 
 We have a local red fox that is apt to follow us...
 
