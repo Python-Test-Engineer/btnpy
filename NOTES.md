@@ -47,7 +47,7 @@ My links:
 ### Brighton, UK
 
 <img src="./images/brighton-map.jpeg"  height="200">
-<img src="./images/brighton.jpg"  height="200">
+<img src="./images/i360.jpeg"  height="200">
 
 ### Volounteer coach
 
