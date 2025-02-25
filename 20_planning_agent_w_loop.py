@@ -19,12 +19,6 @@ else:
 client = OpenAI()
 MODEL = "gpt-4o-mini"
 
-
-def calculate_total(amount):
-    amount = int(amount)
-    return int(amount * 1.2)
-
-
 def get_product_price(product):
     if product == "bike":
         return 100
@@ -34,6 +28,9 @@ def get_product_price(product):
         return 300
     return None
 
+def calculate_total(amount):
+    amount = int(amount)
+    return int(amount * 1.2)
 
 class Agent:
     def __init__(self, client: client, system: str = "") -> None:
@@ -87,13 +84,13 @@ User Question: What is total cost of a bike including VAT?
 
 AI Response: THOUGHT: I need to find the cost of a bike|ACTION|get_product_price|bike
 
-You will be called again with the result of get_product_price as the OBSERVATION and will have OBSERVATION|200 sent as another LLM query along with previous messages.
+You will be called again with the result of get_product_price as the OBSERVATION and will have OBSERVATION|200 sent as another LLM prompt along with previous messages.
 
 Then the next message will be:
 
 THOUGHT: I need to calculate the total including the VAT|ACTION|calculate_total|200
 
-The result wil be passed as another query as OBSERVATION|240 along with previous messages.
+The result wil be passed as another prompt as OBSERVATION|240 along with previous messages.
 
 If you have the ANSWER, output it as the ANSWER in this format:
 
@@ -102,19 +99,18 @@ ANSWER|The price of the bike including VAT is 240
 """
 
 
-def loop(max_iterations=10, query: str = ""):
+def loop(max_iterations=10, prompt: str = ""):
     agent = Agent(client=client, system=system_prompt)
     tools = ["calculate_total", "get_product_price"]
-    next_prompt = query
     console.print("[dark_orange]\nSTARTING LOOP...\n[/]")
     i = 0
     while i < max_iterations:
         i += 1
         #
-        # This is the AI bit, sending the output from the previous query as the prompt for the next query.
+        # This is the AI bit, sending the output from the previous prompt as the prompt for the next prompt.
         # -------------------------
         #
-        result = agent(next_prompt)
+        result = agent(prompt)
         #
         # -------------------------
         #
@@ -132,15 +128,16 @@ def loop(max_iterations=10, query: str = ""):
             #
             if next_function in tools:
                 result_tool = eval(f"{next_function}('{next_arg}')")
-                # OBSERVATIONS passed back into next_prompt
-                next_prompt = f"OBSERVATION: {result_tool}"
-                console.print(f"[green]{next_prompt}[/]")
+                # OBSERVATIONS passed back into prompt in the format OBSERVATION|result as specified in prompt template
+                prompt = f"OBSERVATION: {result_tool}"
+                console.print(f"[green]{prompt}[/]")
                 print("------------------------------\n")
             else:
-                next_prompt = "OBSERVATION: Tool not found"
+                prompt = "OBSERVATION: Tool not found"
             continue
         #
         # if we have a final ANSWER, store it and break out of loop
+        #
         if "ANSWER" in result:
             #
             print("======================================")
@@ -152,7 +149,7 @@ def loop(max_iterations=10, query: str = ""):
 
 # Let's run it...
 
-loop(query="What is cost of a bike including VAT?")
+loop(prompt="What is cost of a laptop including VAT?")
 
 # NB We used
 # 'THOUGHT: I need to calculate the total including the VAT|ACTION|calculate_total|200' a
