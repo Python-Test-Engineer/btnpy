@@ -56,6 +56,7 @@ I am a volounteer coach at codebar.io/brighton
 <img src="./images/codebar.png" width="400" >
 
 and I also enjoy working in community kitchens and partner dancing.
+<br><br><br><br>
 
 ### Leo!
 
