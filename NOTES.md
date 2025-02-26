@@ -27,7 +27,7 @@ There may be edge cases and I have avoided these to avoid making the talk more c
 We will focus on the CHAT completion API.
 
 
-<h3 style="color:orange">
+<h3 style="color:#DB4C00;">
  Let's look at where Agentic Apps differ from regular apps and perhaps we may see that AI Agents are everyday Python with LLM API calls.
 </h3>
 
