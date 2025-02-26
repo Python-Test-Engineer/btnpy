@@ -2,4 +2,3 @@
 
 <img src="./craig-west-intro-card.png" width=700px>
 
-## Repo for talk
