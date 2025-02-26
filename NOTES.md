@@ -2,13 +2,13 @@
 
 <img src="craig-west-intro-card.png" width="600px">
 
-The repo is here: 
+The repo containing all the materials is here: 
 
-[https://pytest-cookbook.com/](https://pytest-cookbook.com/)
+[https://pytest-cookbook.com/](https://pytest-cookbook.com/) (has link)
 
 or
 
-[https://github.com/Python-Test-Engineer/django-jpn](https://github.com/Python-Test-Engineer/django-jpn)
+[https://github.com/Python-Test-Engineerbtnpy](https://github.com/Python-Test-Engineer/btnpy) (direct)
 
 I will show you the repo and this is a mini-workshop effectively that can also be used for future reference.
 
@@ -24,7 +24,12 @@ The aim of this talk is to **demystify** and **simplify** AI Agents and AI Progr
 
 There may be edge cases and I have avoided these to avoid making the talk more complex than it needs to be for its aims.
 
-Let's look at where Agentic Apps differ from regular apps and perhaps we may see that AI Agents are 'just' Python with LLM calls.   
+We will focus on the CHAT completion API.
+
+
+<h3 style="color:orange">
+ Let's look at where Agentic Apps differ from regular apps and perhaps we may see that AI Agents are everyday Python with LLM API calls.
+</h3>
 
 ## Who am I?
 
