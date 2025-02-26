@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!-- saved from url=(0049)https://proton.ad.gt/join-ad-interest-groups.html -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+    
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="origin-trial" content="A7EJXd+QZ2JL/N8k85e+yMFGsIkETopEYjLMJjZMUYg51sgbRqLKdhW9nOiyEdVwWCOq8YRHOx+w9GQ8D9HqeAoAAACCeyJvcmlnaW4iOiJodHRwczovL2F1ZGlnZW50LmNvbTo0NDMiLCJmZWF0dXJlIjoiUHJpdmFjeVNhbmRib3hBZHNBUElzIiwiZXhwaXJ5IjoxNjk1MTY3OTk5LCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ==">
+    <title>Audigent Proton</title>
+    <script>
+        !function (w, d) {
+            const PROFILER_SERVICE_URL = 'https://p.ad.gt';
+
+            function sendEvent(igNames, eventId) {
+                if (eventId != null) {
+                    const payload = {
+                        'events': [{
+                            'type': 'dsp_js_load',
+                            'igs': igNames,
+                            'evid': eventId
+                        }]
+                    };
+                    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+                    w.navigator.sendBeacon(`${PROFILER_SERVICE_URL}/api/v1/event`, blob);
+                }
+            };
+
+            w.addEventListener('message', function (event) {
+                const payload = event.data;
+                const channel = payload['channel'];
+                if (payload != null && channel === 'AUPA') {
+                    // the payload is the correct one, run main logic
+                    if ('joinAdInterestGroup' in w.navigator &&
+                        d.featurePolicy.allowsFeature('join-ad-interest-group')) {
+                        // console.log('[Audigent DSP.js] navigator.joinAdInterestGroup() is supported on this page');
+
+                        const eventId = payload['evid'];
+
+                        switch (payload['consumer']) {
+                            case 'AUDIGENT': {
+                                const interestGroups = payload['igs'];
+                                if (Array.isArray(interestGroups) && interestGroups.length > 0) {
+                                    let interestGroupNames = []
+                                    for (const element of interestGroups) {
+                                        w.navigator.joinAdInterestGroup(element);
+                                        interestGroupNames.push(element['name']);
+                                    }
+                                    // console.log("[Audigent DSP.js] add user to [" + interestGroupNames.join(",") + "]");
+                                    sendEvent(interestGroupNames, eventId);
+                                }
+                            } break;
+                            case 'YAHOO': {
+                                const segments = payload['segs'];
+                                if (Array.isArray(segments) && segments.length > 0) {
+                                    const ifrm = d.createElement('iframe');
+                                    ifrm.width = 1;
+                                    ifrm.height = 1;
+                                    ifrm.style.display = 'none';
+                                    ifrm.src = "https://audigent-gps.ybp.yahoo.com/bid/vzd/adslot/13935/?pa=1&as=" + segments.join();
+                                    return d.body.appendChild(ifrm);
+                                }
+                            } break;
+                            case 'NEXTROLL': {
+                                const segments = payload['segs'];
+                                if (Array.isArray(segments) && segments.length > 0) {
+                                    const auIds = segments.join(",");
+                                    const domain = payload['domain'] || 'null';
+                                    const nxr = d.createElement('iframe');
+                                    nxr.style.display = 'none';
+                                    nxr.border = '0';
+                                    nxr.width = '0';
+                                    nxr.height = '0';
+                                    nxr.src = `https://x.adroll.com/pxl/partner_iframe_content.html?audcs=${auIds}&join_domain=${domain}&p_code=f6v`;
+                                    return d.body.appendChild(nxr);
+                                }
+                            } break;
+                            default:
+                                break;
+                        }
+                    } // else {
+                        //console.log('[Audigent DSP.js] navigator.joinAdInterestGroup() is not supported on this page');
+                    // }
+                }
+            });
+
+        }(window, document);
+    </script>
+</head>
+
+<body>
+
+
+
+<iframe width="0" height="0" src="./partner_iframe_content.html" style="display: none;"></iframe></body></html>

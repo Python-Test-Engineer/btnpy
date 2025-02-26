@@ -1,0 +1,159 @@
+var checkProgress = {
+    start: function (idx) {
+        setTimeout(function () {
+            this._execRequest(idx);
+        }.bind(this));
+    },
+    _queueRequest: function (idx, moreWait) {
+        var cntUnfinished = 0, cntTotal = convertList.conversionData.length;
+        for(var i = 0; i < cntTotal; i++)
+            if(!convertList.conversionData[i].onDeviceURL && !convertList.conversionData[i].finished)
+                cntUnfinished++;
+
+        var waitTime = 1;
+        if(cntUnfinished > 5) waitTime = 2;
+        if(cntUnfinished > 10) waitTime = 3;
+        if(cntUnfinished > 25) waitTime = 4;
+        if(moreWait > 0) waitTime += moreWait;
+
+        setTimeout(function () {
+            this._execRequest(idx);
+        }.bind(this), waitTime * 1000);
+    },
+    _execRequest: function (idx) {
+        fetch(ROOT_FOLDER + '/cf_nocache/ajax/check_progress.php?token=' + convertList.conversionData[idx].token)
+        .then(response => {
+            if(response.ok) return response.json();
+            throw Error('Server returned status code ' + response.status);
+        })
+        .then(data => {
+            var inQueueArrayIdx = convertList.inServerQueueIdxs.indexOf(idx);
+            if (inQueueArrayIdx > -1)
+                convertList.inServerQueueIdxs.splice(inQueueArrayIdx, 1);
+
+            switch (data.conversion_data.status) {
+                case 'in_queue':
+                    convertList.updateProgress(idx,
+                        'Waiting in queue to convert... (If you cancel, you\'ll lose your spot in the line)', 50);
+
+                    convertList.inServerQueueIdxs.push(idx);
+
+                    this._queueRequest(idx, 5);
+                    break;
+                case 'converting':
+                    this._savePercent(idx, data.progress_data.progress_as_percentage);
+
+                    convertList.updateProgress(idx,
+                        (targetFormats.selectedFormat.name == 'tiny.pdf' ? 'Compressing' : 'Converting')
+                            + '... ' + this._getExtra(idx, data.progress_data.progress_as_percentage),
+                        50 + Math.floor(data.progress_data.progress_as_percentage / 2));
+
+                    this._queueRequest(idx);
+                    break;
+                case 'finished':
+                    //Also in onDeviceConv.js:
+                    loadScript(ROOT_FOLDER + '/js/download.js', function () {
+                        //1 is single-file, multi_output_files=false; but also multi_output_files=true with 1 file:
+                        convertList.conversionData[idx].outputsCnt = data.conversion_data.output_files_cnt || 1;
+                        convertList.conversionData[idx].sizeHuman = data.file_data.converted_size_human;
+
+                        var txt = 'Converted to ' + userFriendly.stylize(targetFormats.selectedFormat.name);
+                        if (targetFormats.selectedFormat.name == 'tiny.pdf')
+                            txt = 'Compressed';
+                        convertList.updateProgress(idx, txt +
+                            ' • ' + (convertList.conversionData[idx].outputsCnt > 1 ?
+                                convertList.conversionData[idx].outputsCnt + ' files' :
+                                data.file_data.converted_size_human) +
+                            ' • took ' + data.conversion_data.time_spent, 100);
+
+                        download.init(idx);
+
+                        convertList.conversionData[idx].finished = true;
+                        if(convertList.areAllFinished()) targetFormats.displayFinished();
+
+                        //Allow downloading in bulk as at least 1 file has finished:
+                        convertList.dom.toolbarActions.download.style.display = '';
+                        if (browserCompat.isFSASupported() || browserCompat.isBraveBrowser())
+                            convertList.dom.toolbarActions.save.style.display = '';
+                    });
+                    break;
+                case 'error':
+                    if (data.error_data.error_reason == 'cancelled' || data.error_data.error_reason == 'cancelled_chunked_upload') {
+                        loadScript(ROOT_FOLDER + '/js/cancelConv.js', function () {
+                            cancelConv.markCancelled(idx);
+                        });
+                    } else {
+                        //A real error:
+                        convertList.conversionData[idx].errorData = this._errorToHuman(data.error_data.error_reason, data.conversion_data.id);
+                        convertList.setErrored(idx);
+
+                        convertList.conversionData[idx].finished = true;
+                        if(convertList.areAllFinished()) targetFormats.displayFinished();
+                    }
+                    break;
+            }
+        })
+        .catch(err => {
+            this._queueRequest(idx, 10);
+            
+            console.error(err);
+            //Sentry.captureException(err);
+        });
+    },
+
+    _savePercent: function (idx, percentage) {
+        var old = convertList.conversionData[idx].progress || {
+            percent: 0,
+            shownCnt: 0
+        };
+        convertList.conversionData[idx].progress = {
+            percent: percentage,
+            shownCnt:
+                old.percent == percentage ?
+                ++old.shownCnt : 1
+        };
+    },
+    _getExtra: function (idx, percentage) {
+        var txt = '';
+        if (convertList.conversionData[idx].progress.shownCnt > 60) {
+            txt = 'This may take up to a few hours...';
+        } else if (convertList.conversionData[idx].progress.shownCnt > 5) {
+            var variations = [
+                'This may take a while...',
+                'Still working on it...',
+                'Making progress...',
+                'It\'s not stuck'
+            ];
+            var mod = convertList.conversionData[idx].progress.shownCnt % 19;
+            if (mod < 5)
+                txt = variations[0];
+            else if (mod < 10)
+                txt = variations[1];
+            else if (mod < 15)
+                txt = variations[2];
+            else
+                txt = variations[3];
+        }
+        if(txt) txt += ' ';
+        txt += '(' + percentage + '%)';
+        return txt;
+    },
+
+    _errorToHuman: function (reason, id) {
+        switch (reason) {
+            case 'corrupted_input_file':
+                return {'name': 'Corrupted or encrypted file',
+                'description': 'Your file cannot be converted because it is corrupted, DRM- or password-protected.'};
+            case 'empty':
+                return {'name': 'File is empty',
+                'description': 'Your file cannot be converted because it has no contents.'};
+            case 'impossible':
+                return {'name': 'Unavailable target format',
+                'description': 'Your file cannot be converted because it will produce an empty file. This happens, for example, when converting a silent video to an audio-only format.'};
+            case 'converter_error':
+                return {'name': 'Something went wrong',
+                'description': 'An unknown error occurred while converting your file. Your conversion ID: ' + id,
+                'reportConvId': id};
+        }
+    }
+};

@@ -1,0 +1,286 @@
+var upload = {
+    start: function (idx, noDelayRetry) {
+        setTimeout(function () {
+            if(convertList.conversionData[idx].finished) return;//The conversion was cancelled by user before it started uploading w/ delay
+
+            if (
+                /* onLoginStateFetched has already been called: */
+                (window.abdDone || (account.loggedIn && account.activePurchase)) && 
+                this._getCurrentUploadsCnt() + convertList.inServerQueueIdxs.length < 3 &&
+                /* Prevent later items from start to upload before previous ones: */
+                !convertList.hasInLocalQueueBefore(idx)
+            ) {
+                convertList.updateProgress(idx, 'Starting...', 0);
+                this._uploadChunk(idx, 0, convertList.files[idx], 0, true);
+            } else {
+                //Attempt again, later:
+                setTimeout(function () {
+                    if(convertList.conversionData[idx].finished) return;//Otherwise the progress will change again to Waiting after cancelling by user
+                    upload.start(idx, true);
+                }, 600);
+            }
+        }.bind(this), noDelayRetry ? 0 : idx * 500);
+
+        //Immediately change action from remove to cancel:
+        convertList.updateProgress(idx, 'Waiting in queue to upload...', 0);
+        //Update the icon only the 1st time, to prevent replaying its animation:
+        if (!noDelayRetry)
+            convertList.changeActionBtn(idx, 'cancel', 'right', 'Cancel', 'close');
+    },
+    _uploadChunk: function (idx, startByte, fileBlob, attemptCnt = 0, isFirstChunk) {
+        if (attemptCnt > 2) {
+            this._setFailedUpload(idx, isFirstChunk);
+            return;
+        }
+
+        //TODO for better UX, move this check to the backend like data.vpn_login_required, make it the last check:
+        if (
+            isFirstChunk &&
+            !account.activePurchase &&
+            fileBlob.size > REWARD_THRESHOLD.size &&
+            !(typeof rewardGAM !== 'undefined' && rewardGAM.granted)
+        ) {
+            loadScript(ROOT_FOLDER + '/js/rewardGAM.js', () => {
+                rewardGAM.ask();
+            });
+
+            this._setToRestart(idx, 'Unlock files over ' + REWARD_THRESHOLD.size_human);
+            return;
+        }
+
+
+        var endByte = startByte + (isFirstChunk ? 1 : 10000000);
+        if(endByte > fileBlob.size) endByte = fileBlob.size;
+        
+        var doOnDevice = targetFormats.canBeOnDevice(
+            convertList.conversionData[idx].sourceFormat,
+            targetFormats.selectedFormat.name
+        ) && !fileBlob.cloud;
+
+        var getParams = isFirstChunk ?
+            'target_format=' + encodeURIComponent(targetFormats.selectedFormat.name) +
+            '&total_size=' + fileBlob.size +
+            '&source_mime=' + encodeURIComponent(convertList.files[idx].type) +
+            '&filename=' + encodeURIComponent(convertList.files[idx].name) +
+            '&abd=' + (document.querySelector('#noAbd') === null)
+            :
+            'token=' + convertList.conversionData[idx].token +
+            '&start_byte=' + startByte;
+        if (doOnDevice) {
+            getParams += '&source_format=' + encodeURIComponent(convertList.conversionData[idx].sourceFormat);
+            //Start loading the script earlier,
+            //to avoid bug w/ cancelling on-device conversion while still loading:
+            loadScript(ROOT_FOLDER + '/js/onDeviceConv.js');
+        }
+        if (fileBlob.cloud)
+            getParams += '&cloud_provider=' + encodeURIComponent(fileBlob.cloud.provider);
+        if (isFirstChunk && targetFormats.selectedCompression)
+            getParams += '&compression_level=' + encodeURIComponent(targetFormats.selectedCompression);
+
+        var xhr = new XMLHttpRequest();
+        xhr.responseType = 'json';
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable && !doOnDevice && !fileBlob.cloud) {
+                //FormData texts are included in the progress,
+                //need to approximate the percentage with them:
+                var approxLoadedPart = (e.loaded / e.total) * (endByte - startByte);
+                var percent = Math.round(((startByte + approxLoadedPart) / fileBlob.size) * 100);
+                var txt = e.loaded == e.total ? ' (saving...)' : '';//transferring from PWA server to API
+                convertList.updateProgress(idx, 'Uploading... (' + percent + '%)' + txt, Math.round(percent / 2));
+            } else if (fileBlob.cloud) {
+                convertList.updateProgress(
+                    idx,
+                    'Transferring from ' + userFriendly.clouds[fileBlob.cloud.provider] + '...',
+                    isFirstChunk ? 5 : 15
+                );
+            }
+        });
+        xhr.addEventListener('load', (e) => {
+            var data = e.target.response;
+            if (e.target.status != 200 || !data) {
+                this._handleNetworkError(idx, startByte, fileBlob, attemptCnt, isFirstChunk);
+                return;
+            }
+
+            if (data.check_premium) account.checkLoginState();
+            if (data.error) {
+                switch (data.error.code) {
+                    case 11:
+                        //Either the conversion was cancelled server-side,
+                        //or the internet connection dropped during last chunk upload (bug#29),
+                        //in which case the conversion should continue normally.
+                        //Both can be handled by checkProgress:
+                        this._handleCompletedUpload(idx);
+                        break;
+                    case 13:
+                        //Can happen with intermittent internet connection on the final chunk.
+                        //Because last_chunk_end_at is not given,
+                        //seek to the next/final chunk:
+                        this._uploadChunk(idx, endByte, fileBlob, attemptCnt + 1);
+                        break;
+                    case 14:
+                        //Can happen with intermittent internet connection.
+                        //Seek to the proper file location:
+                        this._uploadChunk(idx, data.error.last_chunk_end_at, fileBlob, attemptCnt + 1);
+                        break;
+                    default:
+                        //Another real error.
+                        convertList.conversionData[idx].errorData = {'name': 'An error occurred. Press the error icon for details', 'description': data.error.message};
+                        convertList.setErrored(idx);
+                        //Mark as finished:
+                        convertList.conversionData[idx].finished = true;
+                        if(convertList.areAllFinished()) targetFormats.displayFinished();
+                }
+                return;
+            }
+            if (data.daily_limit_exceeded) {
+                if(account.activePurchase) account.checkLoginState();//just expired
+
+                var adsBlocked = document.querySelector('#noAbd') === null;
+                if (!adsBlocked || window.fcShown) {
+                    loadScript(ROOT_FOLDER + '/js/upgrade.js', () => {
+                        const limit = PLANS['free' + (adsBlocked ? '_adblock' : '')]['daily_limit'];
+                        upgrade.setUpgradeHeadings('Convert more than ' + limit + ' file' + (limit > 1 ? 's' : '') + ' per day');
+                    });
+                    location.href = '#upgrade';
+                    logEvt('see_upgrade_dialog', { 'event_category': 'premium', 'event_label': 'From Daily Limit' + (adsBlocked ? ' Adblock' : '') });
+                } else {
+                    loadFC();
+                    storage.set('session', 'prevent_unload', 0);
+                    logEvt('show_fc', { 'event_category': 'premium', 'event_label': 'Funding recovery shown for Adblock' });
+                }
+                
+                this._setToRestart(idx, 'Daily limit exceeded. Upgrade to convert now or wait 1 day');
+                return;
+            }
+            if (data.vpn_login_required) {
+                toast.show("Account required as you're using a VPN.", 5000, "SIGN IN", function () {
+                    account.login();
+                    toast.hide();
+                });
+                account.login();
+                logEvt('vpn_detected', { 'event_category': 'vpn', 'event_label': 'Account required to convert with VPN' });
+                accountGoals.list.push('vpn');
+
+                this._setToRestart(idx, 'VPN detected. Sign in to continue converting');
+                return;
+            }
+
+
+            //No errors. Continue processing of upload:
+            if (!fileBlob.cloud) {
+                var endPercent = Math.round((endByte / fileBlob.size) * 100);
+                convertList.updateProgress(idx, 'Uploading... (' + endPercent + '%)', Math.round(endPercent / 2));
+            }
+
+            if (isFirstChunk) {
+                convertList.conversionData[idx].token = data.token;
+                convertList.conversionData[idx].filename = data.conversion_data.filename;
+                convertList.conversionData[idx].id = data.conversion_data.id;//for user satisfaction feedback
+            }
+
+            if (doOnDevice) {
+                //Continue converting it on-device:
+                loadScript(ROOT_FOLDER + '/js/onDeviceConv.js', function () {
+                    onDeviceConv.start(idx);
+                });
+            } else if (data.awaiting_chunks) {
+                //Upload next chunk to server API:
+                this._uploadChunk(idx, endByte, fileBlob);
+            } else {
+                //Upload is done:
+                this._handleCompletedUpload(idx);
+            }
+        });
+        xhr.addEventListener('abort', (e) => {
+            setTimeout(() => {
+                loadScript(ROOT_FOLDER + '/js/cancelConv.js', function () {
+                    cancelConv.markCancelled(idx);
+                });
+            }, 1);//without this, the loadScript callback doesn't fire
+        });
+        xhr.addEventListener('error', (e) => {
+            this._handleNetworkError(idx, startByte, fileBlob, attemptCnt, isFirstChunk);
+        });
+        xhr.addEventListener('timeout', (e) => {
+            this._handleNetworkError(idx, startByte, fileBlob, attemptCnt, isFirstChunk);
+        });
+        xhr.open('POST', ROOT_FOLDER + '/cf_nocache/ajax/upload.php?' + getParams, true);
+        var formData = new FormData();
+        if (fileBlob.cloud) {
+            //Cloud-selected files must send fake data (1st chunk):
+            formData.set('file', new Blob(['1']));
+            //URL with the actual file contents:
+            formData.set('cloud_url', fileBlob.cloud.url);
+            //Google Drive requires additional auth:
+            formData.set('cloud_auth', fileBlob.cloud.auth);
+        } else {
+            formData.set('file', fileBlob.slice(startByte, endByte));
+        }
+        xhr.send(formData);
+
+        convertList.conversionData[idx].xhr = xhr;//so that it can be aborted when cancelling
+    },
+    _handleNetworkError: function (idx, startByte, fileBlob, attemptCnt = 0, isFirstChunk) {
+        //Retry the same request:
+        convertList.conversionData[idx].uploadRetryQueued = setTimeout(function () {
+            delete convertList.conversionData[idx].uploadRetryQueued;
+            if (!convertList.conversionData[idx].finished)
+                this._uploadChunk(idx, startByte, fileBlob, attemptCnt + 1, isFirstChunk);
+        }.bind(this), isFirstChunk ? 500 : 3000);//wait in order not to hammer the server
+
+        if (!isFirstChunk)
+            convertList.updateProgress(idx, 'Retrying to upload... (attempt ' + (attemptCnt+1) + ')', 0);
+        
+        console.error('XHR upload request failed (idx: ' + idx + ', startByte: ' + startByte + ')');
+    },
+    _handleCompletedUpload: function (idx) {
+        convertList.updateProgress(idx, 'Verifying file integrity...', 50);
+
+        delete convertList.conversionData[idx].xhr;
+
+        loadScript(ROOT_FOLDER + '/js/checkProgress.js', function () {
+            checkProgress.start(idx);
+        }.bind(this));
+    },
+    _setFailedUpload: function (idx, isFirstChunk) {
+        if (isFirstChunk) {
+            //Note: this error is also shown for cloud-selected files when the import fails
+            var str = 'Try selecting the file using another method, such as a different storage or cloud app. ';
+            str += browserCompat.isAndroidGDrive() ? 'If the file was selected from Google Drive, first tap on the GOOGLE DRIVE button below the file picker. ' : '';
+            str += 'Also, check your internet connection';
+            convertList.conversionData[idx].errorData = {
+                'name': 'Upload failed to start. ' + str,
+                'description': str + '.'
+            };
+            console.error('Upload failed to start - possibly unreadable file');
+        } else {
+            convertList.conversionData[idx].errorData = {
+                'name': 'Upload failed. Check your internet connection',
+                'description': 'Ensure you have a stable internet connection and try again later.'
+            };
+        }
+        convertList.setErrored(idx);
+        //Mark as finished:
+        convertList.conversionData[idx].finished = true;
+        if(convertList.areAllFinished()) targetFormats.displayFinished();
+    },
+    _setToRestart: function (idx, reasonTxt) {
+        convertList.updateProgress(idx, reasonTxt, 0);
+        convertList.changeActionBtn(idx, 'restart', 'left', 'Try again', 'refresh');
+        //Automatically try to restart:
+        window.addEventListener('login-state-changed', () => {
+            let restartBtn = convertList.elements[idx].querySelector('.left-btn:not(.disabled)[data-action="restart"]');
+            //Only restart if the btn hasn't changed to another action/got disabled:
+            restartBtn && restartBtn.dispatchEvent(new Event('click'));
+        }, { once: true });
+    },
+
+    _getCurrentUploadsCnt: function () {
+        var cnt = 0, convCnt = convertList.conversionData.length;
+        for (var i = 0; i < convCnt; i++)
+            if (convertList.conversionData[i].xhr && !convertList.conversionData[i].finished)
+                cnt++;
+        return cnt;
+    }
+};

@@ -1,0 +1,405 @@
+targetFormats = {
+    dom: {},
+    available: [ /* The available formats returned from server */ ],
+    selectedFormat: {/* properties: name, mime, category: {}, canShare */},
+    selectedCompression: null, /* Compress PDF level */
+    _onDevice: {
+        'apk': ['jar', 'zip'],
+        'csv': ['txt'],
+        'deskthemepack': ['cab'],
+        'jar': ['apk', 'zip'],
+        'jpeg': ['jpg'],
+        'json': ['txt'],
+        'mcaddon': ['zip'],
+        'mcpack': ['zip'],
+        'mctemplate': ['zip'],
+        'mcworld': ['zip'],
+        'sami': ['txt'],
+        'smi': ['txt'],
+        'srt': ['txt'],
+        'sub': ['txt'],
+        'tgz': ['tini'],
+        'themepack': ['cab'],
+        'tini': ['tgz'],
+        'txt': ['csv', 'json', 'smi', 'srt', 'sub'],
+        'zip': ['apk', 'jar', 'mcaddon', 'mcpack', 'mctemplate', 'mcworld'],
+    },
+    init: function () {
+        this.dom = {
+            card: document.querySelector('#formatsCard'),
+            chipsContainer: document.querySelector('#allChipsContainer'),
+            recentContainer: document.querySelector('#recentContainer'),
+            catsContainer: document.querySelector('#categoriesContainer'),
+            compressContainer: document.querySelector('#compressContainer'),
+            form: document.forms.compression,
+            toolbar: document.querySelector('#formatsCardToolbarTitle'),
+            txtWait: document.querySelector('#txtFormatsWait'),
+            txtNoFormats: document.querySelector('#txtNoFormats'),
+            txtNoFiles: document.querySelector('#txtNoFiles'),
+            warnContainer: document.querySelector('#warnContainer'),
+            btnStart: document.querySelector('#btnStart'),
+            txtTermsDisclaimer: document.querySelector('#txtTermsDisclaimer'),
+            doneFragment: document.querySelector('#doneFragment'),
+            btnDeleteAll: document.querySelector('#btnDeleteAll'),
+            template: document.querySelector('#formatsCard > template')
+        };
+        this.dom.progressBar = this.dom.card.querySelector('.progress-bar');
+        /* Don't also select the ones in #settings: */
+        this.dom.chkAutoDl = this.dom.card.querySelector('.chk-auto-dl');
+        this.dom.chkAutoDl.style.display = 'none';
+        this.dom.chkNotifications = this.dom.card.querySelector('.chk-notifications');
+        this.dom.chkNotifications.style.display = 'none';
+        this.dom.chkOrigNames = this.dom.card.querySelector('.chk-orig-names');
+        this.dom.chkOrigNames.style.display = 'none';
+
+        //Otherwise, toolbar buttons may overlap:
+        pwaPrompt.dom.linkWide.classList.add('widest-only');
+        account.dom.btnUpgradeTop.classList.add('widest-only');
+    },
+    prepareList: function () {
+        this.updateToolbarText('Pick a target format');
+        this.dom.progressBar.classList.add('progress-bar-hidden');
+        this.dom.txtWait.style.display = 'none';
+        this.dom.warnContainer.style.display = 'none';
+        this.dom.btnStart.style.display = 'none';
+        this.dom.txtTermsDisclaimer.style.display = '';
+    },
+    fillList: function (formats) {
+        this.available = formats || [];
+
+        if (this.dom.catsContainer.textContent.length) {
+            //Probably more files were added/removed
+            var hadExisting = true;
+            //Remove all existing chips:
+            this.dom.catsContainer.textContent = '';//empty it out
+            this.dom.chipsContainer.querySelectorAll('.chip').forEach(chip => {
+                chip.remove();//for Compress PDF, favourites, recents
+            });
+        }
+
+        var compressFormat;//for Compress PDF
+        var recentChips = {};
+        if (!formats) {
+            this.updateToolbarText('No target formats found');
+            this.dom.txtTermsDisclaimer.style.display = 'none';
+            this.dom.chipsContainer.style.display = 'none';
+            convertList.getValidSourceFormats().length > 0 ?
+                this.dom.txtNoFormats.style.display = '' :
+                this.dom.txtNoFiles.style.display = '';
+        } else {
+            this.dom.chipsContainer.style.display = '';
+            this.dom.txtNoFormats.style.display = 'none';
+            this.dom.txtNoFiles.style.display = 'none';
+
+            loadScript(ROOT_FOLDER + '/js/tFormatsSrch.js', () => {
+                tFormatsSrch.show();
+                if(!hadExisting && window.innerWidth > 500) tFormatsSrch.focus();
+            });
+
+            var containers = this._makeCategoryContainers(formats);
+
+            var preferredIsShown;
+            formats.forEach(format => {
+                var isPreferred = format.name == window.preferredTargetFormat;
+                var chip = this._makeFormatChip(format, isPreferred);
+
+                if(isPreferred) preferredIsShown = true;
+
+                if (format.name == 'tiny.pdf') {
+                    compressFormat = chip;
+                } else {
+                    containers[format.category.id].appendChild(chip);
+
+                    //Make a 2nd copy for Recents:
+                    if (format.recent !== false)
+                        recentChips[format.recent] = this._makeFormatChip(format, isPreferred);
+                }
+            });
+
+            if (!preferredIsShown && preferredTargetFormat.length) {
+                var str;
+                if (preferredTargetFormat == 'tiny.pdf') {
+                    str = 'Can\'t compress because some of the selected files are not PDFs.';
+                } else {
+                    var explanation =
+                        convertList.getValidSourceFormats().includes(preferredTargetFormat) ?
+                        'are in this format already' :
+                        'are in different formats that cannot be converted to it';
+                    str = userFriendly.stylize(preferredTargetFormat) +
+                        ' is missing because some of the selected files ' + explanation + '.';
+                }
+                str += ' Please remove them.';
+
+                this.dom.warnContainer.textContent = str;
+                this.dom.warnContainer.style.display = '';
+            }
+
+            //Some users get confused without it:
+            if (preferredIsShown) {
+                this.dom.btnStart.style.display = '';
+                this.dom.btnStart.onclick = () => this.dom.chipsContainer.querySelector('.chip.preferred').click();
+            }
+        }
+
+        loadScript(ROOT_FOLDER + '/js/tFormatsSrch.js', () => {
+            //The chips container was recreated.
+            //Re-check search results:
+            if(hadExisting) tFormatsSrch.recheck();
+        });
+
+        if (Object.keys(recentChips).length) {
+            Object.keys(recentChips).forEach(key => {
+                this.dom.recentContainer.appendChild(recentChips[key]);
+            });
+        }
+        this.dom.recentContainer.style.display = Object.keys(recentChips).length ? '' : 'none';
+
+        if(compressFormat) this.dom.form.before(compressFormat);
+        this.dom.compressContainer.style.display = compressFormat ? '' : 'none';//PDF compression level
+    },
+    _makeCategoryContainers: function (formats) {
+        var categoriesAll = formats.map(format => format.category);
+        var categories = categoriesAll.filter((category, index) => {
+            return (
+                index ===
+                categoriesAll.findIndex(cat => cat.id === category.id)
+            );
+        });
+        
+        var domEl = [];
+        categories.forEach(category => {
+            var el = document.createElement('div');
+            el.classList.add('chips-category');
+            el.style.setProperty('--color', category.color);
+
+            this.dom.catsContainer.appendChild(el);
+            domEl[category.id] = el;
+        });
+        return domEl;
+    },
+    _makeFormatChip: function (format, isPreferred) {
+        var item = this.dom.template.content.cloneNode(true);
+        item.querySelector('.file-format').textContent = userFriendly.stylize(format.name, true);
+        item.querySelector('.file-format').dataset.format = format.name;//real internal name, like pdfa.pdf
+        if(isPreferred) item.querySelector('.chip').classList.add('preferred');
+        var filetype = userFriendly.getCategoryFromMime(format.mime);
+        item.querySelector('.file-type').textContent = filetype + ' file';
+        item.querySelector('.icon-svg').setAttribute('d', userFriendly.getFormatSVG(filetype));
+        item.querySelector('.chip').addEventListener('click', () => {
+            this._beginUploads(format);
+        });
+        if (format.name == 'tiny.pdf') {
+            item.querySelector('.file-format').textContent = 'Compress PDF';
+            item.querySelector('.chip').title = 'Make PDF files smaller';
+            item.querySelector('.chip').style.borderRadius = '4px';
+        }
+
+        return item;
+    },
+    willRefill: function () {
+        this.dom.progressBar.classList.remove('progress-bar-hidden');
+        this.dom.txtWait.style.display = '';
+        this.dom.chipsContainer.style.display = 'none';
+    },
+    
+    canBeOnDevice: function (fromFormat, toFormat) {
+        if(storage.get('local', 'on_device') != 'checked') return false;
+        if(!this._onDevice[fromFormat]) return false;
+        return this._onDevice[fromFormat].includes(toFormat);
+        //Important: cloud-selected files can NEVER be on-device
+    },
+    _beginUploads: function (format) {
+        /*if (storage.get('session', 'adwords') && (!account.loggedIn || !account.activePurchase)) {
+            loadScript(ROOT_FOLDER + '/js/upgrade.js', () => {
+                upgrade.setUpgradeHeadings(' ');
+            });
+            location.href = '#upgrade';
+            logEvt('see_upgrade_dialog', { 'event_category': 'premium', 'event_label': 'From Adwords Selected Format' });
+            
+            return;
+        }*/
+
+        this._confirmTargetFormat(format);
+        loadScript(ROOT_FOLDER + '/js/tFormatsSrch.js', () => {
+            tFormatsSrch.hide();
+        });
+        loadScript(ROOT_FOLDER + '/js/upload.js', function () {
+            for (var i = 0; i < convertList.elements.length; i++)
+                upload.start(i);
+        });
+        loadScript(ROOT_FOLDER + '/js/runningTime.js', function () {
+            runningTime.start();
+        });
+        setTimeout(() => {
+            loadScript(ROOT_FOLDER + '/js/tutAddon.js', function () {
+                tutAddon.showIfSuitable();
+            });
+        }, 1000);
+    },
+    _confirmTargetFormat: function (format) {
+        this.selectedFormat = format;
+        if (format.name == 'tiny.pdf') {
+            this.selectedCompression = this.dom.form.elements['compress-lvl'].value;
+            this.updateToolbarText('Compressing PDF...');
+        } else
+            this.updateToolbarText('Converting to ' + userFriendly.stylize(format.name) + '...');
+    
+        this.dom.chkAutoDl.style.display = '';
+        this.dom.chkNotifications.style.display = '';
+        this.dom.chkOrigNames.style.display = '';
+        this.dom.warnContainer.style.display = 'none';
+        this.dom.btnStart.style.display = 'none';
+        this.dom.txtTermsDisclaimer.style.display = 'none';
+        this.dom.chipsContainer.style.display = 'none';
+        this.dom.progressBar.classList.remove('progress-bar-hidden');
+        convertList.updateTitleNotifs();
+
+        var hasRemovedItems = false;
+        //Iterate backwards to handle cases where 2 consecutive items need removal:
+        for (var idx = convertList.elements.length - 1; idx >= 0; idx--) {
+            if(!convertList.elements[idx].querySelector('.error')) continue;
+            convertList.removeElement(idx);
+            hasRemovedItems = true;
+        }
+        if (hasRemovedItems) {
+            toast.show("Some unsupported files were removed.", 5000, "OK", function () {
+                toast.hide();
+            });
+        }
+
+        convertList.disableAddMore();
+
+        logEvt('conversion_start', {
+            'event_category': 'conversion',
+            'event_label': 'Started converting to ' + format.name.toUpperCase(),
+            'value': convertList.conversionData.length
+        });
+        Object.entries(convertList.getValidSourceFormatsByCount()).forEach(entry => {
+            const [key, val] = entry;
+            logEvt('conversion_from', {
+                'event_category': 'conversion',
+                'event_label': 'Converting from ' + key.toUpperCase(),
+                'value': val
+            });
+        });
+
+        //Allow cancelling in bulk:
+        convertList.dom.toolbarActions.cancel.style.display = '';
+
+        loadScript(ROOT_FOLDER + '/js/sharerConstraints.js', function () {
+            this.selectedFormat.canBeShared = sharerConstraints.canShare(format);
+        }.bind(this));
+
+        //To "hide" the top logo:
+        this.dom.card.scrollIntoView({behavior: 'smooth', block: 'start'});
+
+        //cookiesUse.close();
+    },
+
+    updateToolbarText: function (txt) {
+        this.dom.toolbar.textContent = txt;
+
+        if (document.body.classList.contains('reduced-motion')) return;
+        this.dom.toolbar.style.animation = 'top-counter .2s';
+        this.dom.toolbar.addEventListener('animationend', function (e) {
+            e.target.style.animation = '';
+        }, { once: true });
+    },
+
+    updateMatches: function (formats) {
+        var chips = this.dom.chipsContainer.querySelectorAll('.chip');
+        chips.forEach(el => {
+            if(el.parentElement.id == 'compressContainer') return;//don't match Compress PDF
+            
+            if (formats.includes(el.querySelector('.file-format').dataset.format)) {
+                el.classList.remove('not-matching');
+                el.tabIndex = 0;
+            } else {
+                el.classList.add('not-matching');
+                el.tabIndex = -1;
+            }
+        })
+    },
+    selectByName: function (formatName) {
+        this._beginUploads(
+            this.available.find(format => format.name == formatName)
+        );
+    },
+
+    displayFinished: function () {
+        storage.set('session', 'prevent_unload', 0);
+
+        var txt = 'Finished converting to ' + userFriendly.stylize(this.selectedFormat.name);
+        if (targetFormats.selectedCompression)
+            txt = 'Finished compressing PDF (' + targetFormats.selectedCompression + ' compression)';
+
+        this.updateToolbarText(txt);
+        this.dom.chkAutoDl.style.display = 'none';
+        this.dom.chkNotifications.style.display = 'none';
+        this.dom.chkOrigNames.style.display = 'none';
+        this.dom.progressBar.classList.add('progress-bar-hidden');
+        this.dom.doneFragment.style.display = '';
+
+        logEvt('conversion_finish', {
+            'event_category': 'conversion',
+            'event_label': txt,
+            'value': convertList.conversionData.length
+        });
+        
+
+        //Can also trigger if all are cancelled:
+        if(convertList.areAllDeleted()) this._hideDeleteAll();
+
+        this.dom.btnDeleteAll.onclick = function () {
+            targetFormats.dom.btnDeleteAll.disabled = true;
+            targetFormats.dom.btnDeleteAll.textContent = 'DELETING...';
+            loadScript(ROOT_FOLDER + '/js/deleteConv.js', function () {
+                deleteConv.delByIdx([...Array(convertList.conversionData.length).keys()]);
+            });
+        };
+
+        loadScript(ROOT_FOLDER + '/js/runningTime.js', function () {
+            runningTime.end();
+            account.onLoginStateFetched(() => {
+                runningTime.displayForFree();
+            });
+        });
+        if (account.currentPlan == 'free' && storage.get('session', 'adwords')) {
+            //Don't allow to rate bc of the download paywall
+        } else {
+            loadScript(ROOT_FOLDER + '/js/rate.js', function () {
+                rate.show();
+            });
+        }
+
+        var finishedAt = Date.now();//timestamp in ms
+        document.addEventListener("visibilitychange", () => {
+            //If 4 hrs have passed - impossible to download files anymore
+            //Mark as deleted in the UI too:
+            if (!convertList.areAllDeleted() && Date.now() > finishedAt + AUTO_DELETION * 1000)
+                this.dom.btnDeleteAll.click();
+        });
+
+        /*
+        loadScript(ROOT_FOLDER + '/js/xmasPromo.js', function () {
+            xmasPromo.init();
+        });
+        */
+    },
+    _hideDeleteAll: function () {
+        document.querySelector('#autoDeleteContainer').style.display = 'none';
+        notifs.clear();
+    },
+    notifyAllDeleted: function () {
+        targetFormats._hideDeleteAll();
+        toast.show("Permanently deleted all your files from our server.", 5000, "OK", function () {
+            toast.hide();
+        });
+    },
+
+    displayAPIOffline: function (reason) {
+        this.updateToolbarText('Can\'t connect to the conversion server');
+        this.dom.txtNoFormats.textContent = reason;//TODO do not overwrite NoFormats error with api down error
+        //TODO show RETRY btn which calls again fetchTargetFormats()
+    }
+};

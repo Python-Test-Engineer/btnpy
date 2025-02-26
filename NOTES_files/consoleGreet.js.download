@@ -1,0 +1,28 @@
+console.log(`%c
+                                     y
+                                     $$g
+                                     $lll&,
+        ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,$lllll&,
+        lllllllllllllllllllllllllllllllllllll$L
+        llllllllllllllllllllllllllllllllllll&
+        lllll                        $llll&
+        lllll                        $llF
+        lllll       A&&&&&g,         $"
+        lllll       lllll$ "&,
+                    lllll&www$L
+                    llllllllllL
+                    llllllllllL      yyyyy
+            ~       llllllllllL      $llll
+          ,$l        """""""""       $llll
+        ,$lll                        $llll
+      w$lllll                        $llll
+    g$llllllllllllllllllllllllllllllllllll
+    "$llllllllllllllllllllllllllllllllllll
+      '&lllll
+         &lll
+           5l                                     
+            '`, 'font-family:monospace;color:#4D8FFE');
+console.log('%c👋 Hi!', 'font-size:x-large')
+console.log('%c⚠ If you were told to copy-paste something here in order to enable some new feature or "hack" other users, '
+  + 'it is a scam.\nInstead, the other person may gain access to your account and files.', 'font-size:large');
+console.log('%cTo learn more, search for Self-XSS.', 'font-size:medium')

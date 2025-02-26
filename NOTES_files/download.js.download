@@ -1,0 +1,387 @@
+var download = {
+    dom: {},
+    _checkerActive: false, /* "event listener" for when a download has started */
+    _autoDlQueue: [], /* (idxs) in case multiple files finish at the same time */
+
+    /*
+    Don't show thumbnails in browsers without lazy loading support.
+    Also, the one time Safari is *supposed* to cache the response,
+    it decides that it won't do it. Of course.
+    Don't show thumbnails in Safari in order not to hammer the server
+    with repeated requests.
+    */
+    _supportsPreviews: 'loading' in HTMLImageElement.prototype && !browserCompat.isWebkit(),
+    _unsupportedPreviewFormats: ['tiff', 'ai'],/* Browsers can't display them in <img> */
+    
+    init: function (idx) {
+        this.dom.dialog = document.querySelector('#downloads');
+        this.dom.txtZipSize = document.querySelector('#txtZipSize');
+        this.dom.btnZip = document.querySelector('#btnDownloadZip');
+        this.dom.btnDir = document.querySelector('#btnDownloadDir');
+        this.dom.list = document.querySelector('#downloadsList');
+        this.dom.template = this.dom.dialog.querySelector('template');
+
+        this.dom.bubChrDl = document.querySelector('#bubBlockedDl');
+
+        convertList.changeActionBtn(idx, 'download', 'left', 'Download',
+            convertList.conversionData[idx].outputsCnt > 1 ? 'download-all' : 'download'
+        );
+        if (convertList.conversionData[idx].onDeviceURL) {
+            convertList.changeActionBtn(idx, '', 'right');
+        } else {
+            convertList.changeActionBtn(idx, 'delete', 'right', 'Delete permanently from our servers', 'trash');
+        }
+        if (targetFormats.selectedFormat.canBeShared && convertList.conversionData[idx].outputsCnt == 1) {
+            //Make visible for single file outputs:
+            var btn = convertList.elements[idx].querySelector('.share-btn');
+            btn.style.display = '';
+            convertList.animateActionBtn(btn);
+        }
+
+        //Auto-download:
+        if (storage.get('local', 'auto_dl') == 'checked') {
+            //Do not use hasActiveChecker() as it shows a toast
+            this._checkerActive ? this._autoDlQueue.push(idx) : this.startSingleFile(idx);
+        }
+    },
+    startSingleFile: function (idx, startedFn, restartFn) {
+        if (account.currentPlan == 'free' && storage.get('session', 'adwords')) {
+            if(location.hash == '#upgrade') return;//already opened, e.g. from a previous file in the list
+            loadScript(ROOT_FOLDER + '/js/upgrade.js', () => {
+                upgrade.setUpgradeHeadings('Download your files');
+            });
+            location.href = '#upgrade';
+            logEvt('see_upgrade_dialog', { 'event_category': 'premium', 'event_label': 'From AdWords download' });
+            return;
+        }
+
+
+        if (convertList.conversionData[idx].onDeviceURL) {
+            this._downloadFrom(
+                convertList.conversionData[idx].onDeviceURL,
+                convertList.conversionData[idx].filename
+            );
+
+            //Fix for DOWNLOAD ALL btn, taken from _checkIfStarted():
+            download._enableDlBtns(idx, true);
+            download._advanceDlQueue();
+            startedFn && startedFn();
+            return;
+        }
+
+
+        if (this.hasActiveChecker()) return;
+        if (!startedFn && convertList.dom.toolbarActions.download.disabled) {
+            //^ startedFn is defined only when called from downloadByIdxs()
+
+            //User has already clicked Download All and is trying to download a single item
+            toast.show('Please wait for all previous downloads to begin.', 4000, "OK", function () {
+                toast.hide();
+            });
+            return;
+        }
+
+        if (convertList.conversionData[idx].outputsCnt == 1) {
+            var dlBtn = convertList.elements[idx].querySelector('.left-btn:not(.disabled)');
+            if(!dlBtn) return;//It's disabled, i.e. trying to download already
+    
+            dlBtn.style.cursor = 'wait';
+            dlBtn.classList.add('disabled');
+        } else {
+            this.dom.btnZip.style.cursor = 'wait';
+            this.dom.btnZip.disabled = true;
+        }
+
+        this._downloadFrom(this._buildServerURL(
+            'token=' + convertList.conversionData[idx].token +
+            (convertList.conversionData[idx].outputsCnt == 1 ? '&file_idx=1&no_idx_in_name=1' : '')
+        ));//when file_idx is not included, it downloads as zip for when multi_output_files=true
+
+        //Register an "event listener" for when the download starts:
+        this._deleteCookie();
+        var now = Math.floor(Date.now() / 1000);
+        var checkerId = setInterval(() => {
+            this._checkIfStarted(checkerId, now, idx, startedFn, () => {
+                //restartFn is defined only when called from downloadByIdxs():
+                restartFn ? restartFn() : this.startSingleFile(idx);
+            });
+        }, 250);
+        this._checkerActive = true;
+    },
+    startChoice: function (idx) {
+        //Chooses between the dialog or directly downloading if a single file
+        if (convertList.conversionData[idx].outputsCnt == 1) {
+            toast.show('Starting download...', 1000);
+            this.startSingleFile(idx);
+            return;
+        }
+        this.unloadDialog();
+        this.prepareDialog(idx);
+    },
+
+    _buildServerURL: function (queryParams) {
+        return (PROXY_DL_DOMAIN || ROOT_FOLDER) +
+            '/cf_nocache/ajax/download.php?' + queryParams +
+            '&orig_names=' + storage.get('local', 'orig_names');
+    },
+    _downloadFrom: function (url, filename = '') {
+        //Non-on-device downloads use server-given header for the filename
+        if (filename.length) {
+            if(!storage.get('local', 'orig_names'))
+                filename += ' [MConverter.eu]';
+            filename += '.' + targetFormats.selectedFormat.name;
+        } else {
+            //When offline, Chromium offers to save empty "download.php" file,
+            //causing user confusion and suspicion.
+            //Set the fallback filename as a workaround:
+            filename = 'Try again.Error';
+        }
+
+        //Fix for automatic downloads from pwa-proxy (i.e. no target="_blank"),
+        //while other conversions are still in progress:
+        var originalPreventUnload = storage.getInt('session', 'prevent_unload');
+        storage.set('session', 'prevent_unload', 0);
+        
+        //Not using target="_blank" as pwa-proxy triggers popup blocker,
+        //since it's a different origin
+        var a = document.createElement('a');
+        if(!PROXY_DL_DOMAIN) a.target = '_blank';//needed for 'downloading' cookie check
+        a.href = url;
+        a.setAttribute('download', filename);
+        a.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true, view: window}));
+
+        storage.set('session', 'prevent_unload', originalPreventUnload);
+    },
+
+    prepareDialog: function (idx) {
+        window.loadingStateDialog = 'downloads';
+        window.location = '#downloads';
+        this.dom.txtZipSize.textContent = convertList.conversionData[idx].sizeHuman;
+        this.dom.btnZip.onclick = function () {
+            this.startSingleFile(idx);
+        }.bind(this);
+        this._enableBtnZip();
+        if (browserCompat.isFSASupported()) {
+            this.dom.btnDir.onclick = function () {
+                loadScript(ROOT_FOLDER + '/js/fsa.js', function () {
+                    fsa.start([idx], 'Multi-output downloads dialog');
+                });
+            }.bind(this);
+            this.dom.btnDir.style.display = '';
+        }
+        this._fillDlItem(idx, 1);
+    },
+    /* convIdx starts from 0; fileIdx starts from 1 (because API) */
+    _fillDlItem: function (convIdx, fileIdx) {
+        if(location.hash != '#downloads') return;//user has closed the dialog already, don't populate the rest of the items
+
+        var item = this.dom.template.content.cloneNode(true);
+        var url = this._buildServerURL('token=' + convertList.conversionData[convIdx].token + '&file_idx=' + fileIdx + '&no_cookie=1');
+        var name = convertList.conversionData[convIdx].filename + '-' + fileIdx + '.' + targetFormats.selectedFormat.name;
+        //Concurrent requests limit (else SuperHosting HTTP 508):
+        if (fileIdx <= 100 &&
+            !this._unsupportedPreviewFormats.includes(targetFormats.selectedFormat.name) &&
+            this._supportsPreviews
+        ) {
+            item.querySelector('.file-preview').src = url + '&inline=1';
+            item.querySelector('.file-preview').alt = 'Preview of ' + name;
+        } else {
+            item.querySelector('.file-preview').style.display = 'none';
+            item.querySelector('.download-item').classList.add('no-preview');
+        }
+        item.querySelector('.file-name').textContent = name;
+        item.querySelector('.file-name').title = name;
+        var clickDlFn = function () {
+            if (account.currentPlan == 'free' && storage.get('session', 'adwords')) {
+                loadScript(ROOT_FOLDER + '/js/upgrade.js', () => {
+                    upgrade.setUpgradeHeadings('Download your files');
+                });
+                location.href = '#upgrade';
+                logEvt('see_upgrade_dialog', { 'event_category': 'premium', 'event_label': 'From AdWords download (in multi_output_files dialog)' });
+                return;
+            }
+
+            this._downloadFrom(url);
+            this.dom.list.children[fileIdx-1].querySelector('.download-btn > title').textContent = 'Downloaded. Click to download again.';
+            this.dom.list.children[fileIdx-1].querySelector('.download-btn > use').setAttribute('href', '#icn-download-done');
+        }.bind(this);
+        item.querySelector('.download-item').addEventListener('click', clickDlFn);//includes `.download-btn`
+        if (targetFormats.selectedFormat.canBeShared) {
+            var clickShareFn = function (e) {
+                e.stopPropagation();//don't also trigger download on parent element click
+                var shareBtn = this.dom.list.children[fileIdx-1].querySelector('.share-btn');
+                if (shareBtn.classList.contains('disabled')) return;//btn is currently disabled
+
+                shareBtn.classList.add('disabled');
+                loadScript(ROOT_FOLDER + '/js/sharer.js', function () {
+                    sharer.startDialog(convIdx, fileIdx);
+                    shareBtn.classList.remove('disabled');
+                });
+            }.bind(this);
+            item.querySelector('.share-btn').style.display = '';//make visible
+            item.querySelector('.share-btn').addEventListener('click', clickShareFn);
+        }
+        this.dom.list.appendChild(item);
+
+        if(convertList.conversionData[convIdx].outputsCnt <= fileIdx) return;
+
+        if (fileIdx % 10 == 0) {
+            requestAnimationFrame(function () {
+                this._fillDlItem(convIdx, fileIdx + 1);
+            }.bind(this));
+        } else {
+            this._fillDlItem(convIdx, fileIdx + 1);
+        }
+    },
+    _enableBtnZip: function () {
+        this.dom.btnZip.style.cursor = '';
+        this.dom.btnZip.disabled = false;
+    },
+    unloadDialog: function () {
+        this.dom.list.textContent = '';
+        this.dom.btnZip.onclick = null;
+        this.dom.btnDir.onclick = null;
+    },
+    
+    downloadByIdxs: function (i, idxs) {
+        if (account.currentPlan == 'free' && storage.get('session', 'adwords')) {
+            loadScript(ROOT_FOLDER + '/js/upgrade.js', () => {
+                upgrade.setUpgradeHeadings('Download your files');
+            });
+            location.href = '#upgrade';
+            logEvt('see_upgrade_dialog', { 'event_category': 'premium', 'event_label': 'From AdWords download all' });
+            convertList.dom.toolbarActions.download.disabled = false;
+            return;
+        }
+        if (i == idxs.length) {
+            convertList.dom.toolbarActions.download.disabled = false;
+            return;
+        }
+
+        if (convertList.isDownloadable(i)) {
+            //Next file will be downloaded after this one has started:
+            download.startSingleFile(i, () => {
+                //Additional delay for browsers with download prompts (Safari):
+                setTimeout(function () {
+                    download.downloadByIdxs(i+1, idxs);
+                }, 1000);
+            }, () => {
+                //Samsung Internet blocked
+                //In case resume requested by user:
+                download.downloadByIdxs(i, idxs);
+            });
+        } else {
+            download.downloadByIdxs(i+1, idxs);
+        }
+    },
+    _checkIfStarted: function (checkerId, checkerStartTime, idx, startedFn, restartFn) {
+        //console.log('checking...', checkerId, checkerStartTime);
+        if (document.cookie.match(/downloading=1/)) {
+            download.hideChrBlockingDl();
+            download._deleteCookie();
+            download._stopChecker(checkerId);
+            download._enableDlBtns(idx, true);
+            download._advanceDlQueue();
+
+            startedFn && startedFn();
+        } else if (browserCompat.isSamsungBlockingDownload() && checkerStartTime + 5 < Math.floor(Date.now() / 1000)) {
+            download._stopChecker(checkerId);
+            download._enableDlBtns(idx);
+            document.querySelector('#continueDlContainer').style.display = '';//from auto-download checkbox in #settings, #blockedDl is opened with this part hidden
+            document.querySelector('#btnBlockedContinue').addEventListener('click', function () {
+                download._samsungContinuedDl = true;
+                hideDialog('blockedDl');
+
+                restartFn && restartFn();
+            }, { once: true });
+            window.loadingStateDialog = 'blockedDl';
+            window.location = '#blockedDl';
+        } else if (checkerStartTime + DOWNLOAD_COOKIE_AGE < Math.floor(Date.now() / 1000)) {
+            download._stopChecker(checkerId);
+            download._enableDlBtns(idx);
+            download._advanceDlQueue();
+            toast.show(
+                navigator.cookieEnabled ?
+                    'Download failed. Check your internet. Check if your browser is blocking automatic downloads.' :
+                    'Please enable cookies from your browser\'s settings. Otherwise, downloads will start more slowly.',
+                8000, "OK", function () {
+                    toast.hide();
+                    download.hideChrBlockingDl();
+            });
+            if (navigator.cookieEnabled && browserCompat.isChrDesktopBlockingDownload()) {
+                download.showChrBlockingDl();
+            }
+
+            startedFn && startedFn();
+        }
+    },
+    hasActiveChecker: function () {
+        if (this._checkerActive)
+            toast.show('Please wait for the previous download to begin.', 4000, "OK", function () {
+                toast.hide();
+            });
+        return this._checkerActive;
+    },
+    _stopChecker: function (checkerId) {
+        clearInterval(checkerId);
+        this._checkerActive = false;
+    },
+    _enableDlBtns: function (idx, isDlSuccessful) {
+        //Re-enable the various Download btns:
+        if (convertList.conversionData[idx].outputsCnt == 1) {
+            if (isDlSuccessful) {
+                //changeActionBtn re-enables the btn automatically:
+                convertList.changeActionBtn(idx, 'download', 'left', 'Downloaded. Click to download again.', 'download-done');
+            } else {
+                var dlBtn = convertList.elements[idx].querySelector('.left-btn');
+                dlBtn.style.cursor = '';
+                dlBtn.classList.remove('disabled');
+            }
+        } else {
+            this._enableBtnZip();
+        }
+    },
+    _advanceDlQueue: function () {
+        //Continue with next item from auto-download queue (if any):
+        if (this._autoDlQueue.length) {
+            this.startSingleFile(this._autoDlQueue[0]);
+            this._autoDlQueue.splice(0, 1);
+        }
+    },
+    _deleteCookie: function () {
+        document.cookie = 'downloading=; Path=/; Domain=' + COOKIE_DOMAIN + '; Max-Age=0';
+    },
+    samsungUnloadBlockedDialog: function () {
+        if (download._samsungContinuedDl) {
+            download._samsungContinuedDl = false;//reset it for future uses
+        } else if (document.querySelector('#continueDlContainer').style.display != 'none') {
+            //The user has closed the dialog w/out wanting to resume downloads.
+            //Re-enable Download all btn:
+            convertList.dom.toolbarActions.download.disabled = false;
+            //Remove any queued auto-downloads:
+            this._autoDlQueue = [];
+        }
+    },
+
+    showChrBlockingDl: function () {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            //PWA window, options menu to the right:
+            this.dom.bubChrDl.style.right = 0;
+            document.querySelector('#icChrBlockedDlSite').style.display = 'none';
+        } else {
+            //Normal browser window, left of the URL:
+            var offset = 100;//Google Chrome, pure Chromium, ...
+            for (browser of navigator.userAgentData.brands)
+                if (browser.brand == 'Microsoft Edge')
+                    offset = 140;
+                else if (browser.brand == 'Opera')
+                    offset = 134;
+            this.dom.bubChrDl.style.left = offset + 'px';
+            document.querySelector('#icChrBlockedDlPWA').style.display = 'none';
+        }
+        this.dom.bubChrDl.style.display = '';
+    },
+    hideChrBlockingDl: function () {
+        this.dom.bubChrDl.style.display = 'none';
+    }
+};

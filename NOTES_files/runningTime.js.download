@@ -1,0 +1,30 @@
+var runningTime = {
+    start: function () {
+        this.runningSince = new Date();
+    },
+    end: function () {
+        var t = Math.ceil((new Date() - this.runningSince) / 60000);//in minutes
+        this._saveTime(t);
+    },
+    displayForFree: function () {
+        return;//disable for now
+        
+        //account login state is already ready here
+        if (!account.loggedIn || !account.activePurchase) {
+            var t = this._getTime();
+            if (t > 29) {
+                document.querySelector('#txtTotalRunningTime').textContent = t + ' minutes in total';
+                document.querySelector('#txtResourcesUsed').style.display = '';
+            } else {
+                document.querySelector('#txtResourcesUsedAlt').style.display = '';
+            }
+            document.querySelector('#donateExplainer').style.display = '';
+        }
+    },
+    _saveTime: function (newTime) {
+        storage.set('local', 'total_running_time', this._getTime() + newTime);
+    },
+    _getTime: function () {
+        return parseInt(storage.get('local', 'total_running_time') || 0);
+    }
+};

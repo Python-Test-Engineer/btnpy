@@ -1,0 +1,58 @@
+var translate = {
+    checks: {
+        chrome: function () {
+            return document.documentElement.className.match('translated');
+        },
+        edge: function () {
+            return document.querySelector('title').hasAttribute('_msthash');
+        }
+    },
+
+    check: function (onlyFor) {
+        if (onlyFor) {
+            if (this.checks[onlyFor]())
+                this.notify(onlyFor);
+            return;
+        }
+
+        //Check for all:
+        for (const provider in this.checks) {
+            if (this.checks[provider]()) {
+                this.notify(provider);
+                return;
+            }
+        }
+    },
+    notify: function (provider) {
+        window.Sentry && Sentry.onLoad(function () {
+            Sentry.setTag('browser-translated', provider);
+        });
+        logEvt('browser_translate', {
+            'event_category': 'translation',
+            'event_label': 'Translated by ' + provider
+        });
+    }
+};
+
+//In case the page is already translated:
+translate.check();
+
+//Observe for later translations:
+new MutationObserver(() => translate.check('chrome')).observe(
+    document.documentElement,
+    {
+        attributes: true,
+        attributeFilter: ['class'],
+        childList: false,
+        characterData: false
+    }
+);
+new MutationObserver(() => translate.check('edge')).observe(
+    document.querySelector('title'),
+    {
+        attributes: true,
+        attributeFilter: ['_msthash'],
+        childList: false,
+        characterData: false
+    }
+);
