@@ -27,7 +27,6 @@
       font-kerning: normal;
     }
 
-
     @media (max-width: 600px) {
       body {
         font-size: 0.9em;
@@ -254,6 +253,7 @@
   <p>or</p>
   <p><a href="https://github.com/Python-Test-Engineer/btnpy">https://github.com/Python-Test-Engineerbtnpy</a>
     (direct)</p>
+  <p>All links used are in LINKS.md</p>
   <p>I will show you the repo and this is a mini-workshop effectively that
     can also be used for future reference.</p>
   <p>And I will be using NOTES.md/NOTES.html for this talk so you can
@@ -262,16 +262,19 @@
   <p>The talk will be mostly code walkthroughs with notebooks that have a
     lot of comments for completeness and clarification.</p>
   <h2 id="caveat">Caveat</h2>
-  <p>This talk takes place in Feb 2025 and models and the landscape change
-    very quickly.</p>
-  <p>The aim of this talk is to <strong>demystify</strong> and
-    <strong>simplify</strong> AI Agents and AI Programming because it can
-    seem like it is another different world of dev or that it is either
-    fully AI or not at all. We can’t have ‘a bit of AI’ in our app.
-  </p>
-  <p>There may be edge cases and I have avoided these to avoid making the
-    talk more complex than it needs to be for its aims.</p>
-  <p>We will focus on the CHAT completion API.</p>
+  <ul>
+    <li>This talk takes place in Feb 2025 and models and the landscape
+      change very quickly.</li>
+    <li>The aim of this talk is to <strong>demystify</strong> and
+      <strong>simplify</strong> AI Agents and AI Programming because it can
+      seem like it is another different world of dev or that it is either
+      fully AI or not at all. We can’t have ‘a bit of AI’ in our app. -There
+      may be edge cases and I have avoided these to avoid making the talk more
+      complex than it needs to be for its aims.
+    </li>
+    <li>Not production code.</li>
+    <li>We will focus on the CHAT completion API.</li>
+  </ul>
   <h3 style="color:#DB4C00;">
     Let's look at where Agentic Apps differ from regular apps and perhaps we may see that AI Agents are everyday Python
     with LLM API calls.
@@ -296,8 +299,8 @@
   <img src="./images/brighton-map.jpeg" height="200">
   <img src="./images/i360.jpeg" height="200">
 
-  <h3 id="volounteer-coach">Volounteer coach</h3>
-  <p>I am a volounteer coach at codebar.io/brighton</p>
+  <h3 id="volunteer-coach">Volunteer coach</h3>
+  <p>I am a volunteer coach at codebar.io/brighton</p>
   <img src="./images/codebar.png" width="400">
 
   <p>and I also enjoy working in community kitchens and partner dancing.
@@ -330,8 +333,9 @@
   <p>If we look at:</p>
   <h2 id="httpsaiagentsdirectorycomlandscape"><a
       href="https://aiagentsdirectory.com/landscape">https://aiagentsdirectory.com/landscape</a></h2>
-  <p>we can see that there are many examples of AI Agent Frameworks and
+  <p>We can see that there are many examples of AI Agent Frameworks and
     they seem to increase each week.</p>
+  <p>At the beginning of the year it was in the 700s.</p>
   <h2 id="aim">Aim</h2>
   <p>What I would like to achieve in this talk is to
     <strong>demystify</strong> and <strong>simplify</strong> AI Agents and
@@ -342,17 +346,19 @@
     admittedly a very magical API?</p>
   <p><em>AI (Agents) as API</em>…</p>
   <p>Then, we would use day to day Python design patterns to handle the
-    responses we get back from the AI Agent and move on to the next step.
-    Business as usual for Python developers.</p>
+    responses we get back from the AI Agent and move on to the next
+    step.</p>
+  <p>Business as usual for Python developers.</p>
   <p>This is the main focus of the talk - <strong>demystify and
       simplify</strong> - and this will enable you to create AI Agents and
     also construct workflows using AI Agents.</p>
-  <p>With that in mind, we don’t need to fully grasp the code this time
-    around.</p>
+  <p>With that in mind, we don’t need to fully grasp the python code this
+    time around but focus on the ‘AI bit’ which I will highlight.</p>
   <p>It is more about seeing the high level view and one can dig deeper
     into the code offline.</p>
-  <p>The repo is built as if a mini workshop with notebooks and py files
-    heavily commented.</p>
+  <p>The repo is built as if a mini workshop with notebooks and
+    <code>.py</code> files heavily commented.
+  </p>
   <p><em>Look at the patterns and structure rather than the code
       details</em> - it is what helped me get to grips with this new
     paradigm.</p>
@@ -444,7 +450,7 @@ response = requests.post(
   <p>The prompt is the input to the AI agent.</p>
   <p>The prompt can be considered to be the API route we are creating and
     it it will be in Natural Language.</p>
-  <p>Let’s look at this file…</p>
+  <p>Let’s look at this file <code>02_api.ipynb</code>…</p>
   <p>We can see this in <code>02_api.ipynb</code> where we pass a system
     prompt and then a prompt to create this endpoint, specifying how we want
     the data returned.</p>

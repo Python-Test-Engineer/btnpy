@@ -10,6 +10,8 @@ or
 
 [https://github.com/Python-Test-Engineerbtnpy](https://github.com/Python-Test-Engineer/btnpy) (direct)
 
+All links used are in LINKS.md
+
 I will show you the repo and this is a mini-workshop effectively that can also be used for future reference.
 
 And I will be using NOTES.md/NOTES.html for this talk so you can follow along with me. There will repetition of some information between my NOTES and the NOTEBOOKS to clarify matters.
@@ -18,13 +20,11 @@ The talk will be mostly code walkthroughs with notebooks that have a lot of comm
 
 ## Caveat
 
-This talk takes place in Feb 2025 and models and the landscape change very quickly. 
-
-The aim of this talk is to **demystify** and **simplify** AI Agents and AI Programming because it can seem like it is another different world of dev or that it is either fully AI or not at all. We can't have 'a bit of AI' in our app.
-
-There may be edge cases and I have avoided these to avoid making the talk more complex than it needs to be for its aims.
-
-We will focus on the CHAT completion API.
+- This talk takes place in Feb 2025 and models and the landscape change very quickly. 
+- The aim of this talk is to **demystify** and **simplify** AI Agents and AI Programming because it can seem like it is another different world of dev or that it is either fully AI or not at all. We can't have 'a bit of AI' in our app.
+-There may be edge cases and I have avoided these to avoid making the talk more complex than it needs to be for its aims.
+- Not production code.
+- We will focus on the CHAT completion API.
 
 
 <h3 style="color:#DB4C00;">
@@ -54,9 +54,9 @@ My links:
 <img src="./images/brighton-map.jpeg"  height="200">
 <img src="./images/i360.jpeg"  height="200">
 
-### Volounteer coach
+### Volunteer coach
 
-I am a volounteer coach at codebar.io/brighton 
+I am a volunteer coach at codebar.io/brighton 
 
 <img src="./images/codebar.png" width="400" >
 
@@ -104,7 +104,9 @@ We will look at examples of code to see what AI Agents are and what they can do.
 If we look at:
 ## [https://aiagentsdirectory.com/landscape](https://aiagentsdirectory.com/landscape) 
 
-we can see that there are many examples of AI Agent Frameworks and they seem to increase each week.
+We can see that there are many examples of AI Agent Frameworks and they seem to increase each week.
+
+At the beginning of the year it was in the 700s.
 
 ## Aim
 
@@ -114,15 +116,17 @@ What if AI Agents were 'just' Python code with a REST API call, admittedly a ver
 
 *AI (Agents) as API*...
 
-Then, we would use day to day Python design patterns to handle the responses we get back from the AI Agent and move on to the next step. Business as usual for Python developers.
+Then, we would use day to day Python design patterns to handle the responses we get back from the AI Agent and move on to the next step. 
+
+Business as usual for Python developers.
 
 This is the main focus of the talk - **demystify and simplify** - and this will enable you to create AI Agents and also construct workflows using AI Agents.
 
-With that in mind, we don't need to fully grasp the code this time around. 
+With that in mind, we don't need to fully grasp the python code this time around but focus on the 'AI bit' which I will highlight.
 
 It is more about seeing the high level view and one can dig deeper into the code offline.
 
-The repo is built as if a mini workshop with notebooks and py files heavily commented.
+The repo is built as if a mini workshop with notebooks and `.py` files heavily commented.
 
 *Look at the patterns and structure rather than the code details* - it is what helped me get to grips with this new paradigm.
 
@@ -216,7 +220,7 @@ The prompt is the input to the AI agent.
 
 The prompt can be considered to be the API route we are creating and it it will be in Natural Language. 
 
-Let's look at this file...
+Let's look at this file `02_api.ipynb`...
 
 We can see this in `02_api.ipynb` where we pass a system prompt and then a prompt to create this endpoint, specifying how we want the data returned.
 
